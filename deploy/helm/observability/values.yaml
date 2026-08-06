@@ -1,0 +1,131 @@
+kube-prometheus-stack:
+  fullnameOverride: monitoring
+  defaultRules:
+    rules:
+      etcd: false
+      kubeControllerManager: false
+      kubeSchedulerAlerting: false
+      kubeSchedulerRecording: false
+  prometheus:
+    prometheusSpec:
+      retention: 7d
+      retentionSize: 8GB
+      resources:
+        requests: { cpu: 200m, memory: 512Mi }
+        limits: { cpu: "1", memory: 2Gi }
+      additionalScrapeConfigs:
+        - job_name: otel-gateway
+          scrape_interval: 10s
+          static_configs:
+            - targets: ["otel-gateway:8889"]
+  grafana:
+    adminPassword: admin-local-only
+    resources:
+      requests: { cpu: 100m, memory: 128Mi }
+      limits: { cpu: 500m, memory: 512Mi }
+    sidecar:
+      dashboards:
+        enabled: true
+        searchNamespace: ALL
+    additionalDataSources:
+      - name: Loki
+        uid: loki
+        type: loki
+        access: proxy
+        url: http://observability-loki:3100
+        jsonData:
+          derivedFields:
+            - datasourceUid: tempo
+              matcherRegex: '"trace_id":"([a-f0-9]+)"'
+              name: TraceID
+              url: "$${__value.raw}"
+      - name: Tempo
+        uid: tempo
+        type: tempo
+        access: proxy
+        url: http://observability-tempo:3200
+        jsonData:
+          tracesToLogsV2:
+            datasourceUid: loki
+            spanStartTimeShift: -2m
+            spanEndTimeShift: 2m
+            filterByTraceID: true
+            customQuery: true
+            query: '{service_name="$${__span.tags["service.name"]}"} | json | trace_id="$${__trace.traceId}"'
+          serviceMap:
+            datasourceUid: prometheus
+  alertmanager:
+    config:
+      global:
+        resolve_timeout: 2m
+      route:
+        receiver: local-warning-sink
+        group_by: [alertname, service, slo]
+        group_wait: 15s
+        group_interval: 2m
+        repeat_interval: 4h
+        routes:
+          - receiver: local-page-sink
+            matchers: ['severity="page"']
+            repeat_interval: 30m
+      inhibit_rules:
+        - source_matchers: ['category="symptom"', 'severity="page"']
+          target_matchers: ['category="cause"']
+          equal: [service]
+      receivers:
+        - name: local-page-sink
+          webhook_configs:
+            - url: http://gateway.sre-lab.svc:8080/internal/alerts
+              send_resolved: true
+        - name: local-warning-sink
+          webhook_configs:
+            - url: http://gateway.sre-lab.svc:8080/internal/alerts
+              send_resolved: true
+
+loki:
+  deploymentMode: SingleBinary
+  loki:
+    auth_enabled: false
+    commonConfig:
+      replication_factor: 1
+    schemaConfig:
+      configs:
+        - from: "2024-01-01"
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: index_
+            period: 24h
+    storage:
+      type: filesystem
+  singleBinary:
+    replicas: 1
+    persistence:
+      enabled: true
+      size: 5Gi
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits: { cpu: "1", memory: 1Gi }
+  backend: { replicas: 0 }
+  read: { replicas: 0 }
+  write: { replicas: 0 }
+  chunksCache: { enabled: false }
+  resultsCache: { enabled: false }
+  gateway: { enabled: false }
+
+tempo:
+  tempo:
+    reportingEnabled: false
+    retention: 24h
+    receivers:
+      otlp:
+        protocols:
+          grpc: { endpoint: "0.0.0.0:4317" }
+          http: { endpoint: "0.0.0.0:4318" }
+  persistence:
+    enabled: true
+    size: 5Gi
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: "1", memory: 1Gi }

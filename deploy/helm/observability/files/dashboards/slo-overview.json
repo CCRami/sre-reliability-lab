@@ -1,0 +1,39 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "panels": [
+    {
+      "title": "Error budget remaining",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "slo:period_error_budget_remaining:ratio", "legendFormat": "{{sloth_slo}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "title": "Current burn rate",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "slo:current_burn_rate:ratio", "legendFormat": "{{sloth_slo}}" }],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "title": "28-day SLI error ratio",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "slo:sli_error:ratio_rate28d", "legendFormat": "{{sloth_slo}}" }],
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 }
+    }
+  ],
+  "schemaVersion": 41,
+  "tags": ["sre-lab", "slo"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "title": "SRE Lab / SLO and Error Budgets",
+  "uid": "sre-lab-slos",
+  "version": 1
+}

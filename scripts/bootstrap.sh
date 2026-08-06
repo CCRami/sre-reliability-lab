@@ -26,5 +26,9 @@ helm upgrade --install sre-lab "${REPO_ROOT}/deploy/helm/sre-lab" \
   --namespace "${LAB_NAMESPACE}" --wait --timeout 5m
 kubectl wait --namespace "${LAB_NAMESPACE}" --for=condition=Available deployment --all --timeout=180s
 
+if [[ "${OBSERVABILITY_ENABLED:-true}" == "true" ]]; then
+  "${REPO_ROOT}/scripts/install-observability.sh"
+fi
+
 BASE_URL="http://localhost:8080" npm run smoke
 printf 'lab ready: http://localhost:8080\n'

@@ -1,0 +1,52 @@
+rule_files:
+  - cause-alerts.yaml
+  - slo-generated.yaml
+
+evaluation_interval: 1m
+
+tests:
+  - name: queue backlog warning waits for sustained impact
+    interval: 1m
+    input_series:
+      - series: 'lab_queue_depth{stream="fulfillment.jobs"}'
+        values: "0+0x4 150+0x10"
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: FulfillmentQueueBacklog
+        exp_alerts: []
+      - eval_time: 10m
+        alertname: FulfillmentQueueBacklog
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              category: cause
+              service: worker
+              stream: fulfillment.jobs
+            exp_annotations:
+              summary: Fulfillment queue contains more than 100 events
+              impact: Accepted orders may be fulfilled later than the 30-second objective.
+              runbook_url: https://github.com/CCRami/sre-reliability-lab/blob/main/runbooks/queue-backlog.md
+
+  - name: availability recording rule enforces minimum request volume
+    interval: 1m
+    input_series:
+      - series: 'lab_http_server_requests_total{service="gateway",route="/api/orders",method="POST",status_class="5xx"}'
+        values: "0+0.1x70"
+    promql_expr_test:
+      - expr: 'slo:sli_error:ratio_rate5m{sloth_id="order-journey-order-availability"}'
+        eval_time: 65m
+        exp_samples: []
+
+  - name: availability fast burn triggers both recording and page alert
+    interval: 1m
+    input_series:
+      - series: 'lab_http_server_requests_total{service="gateway",route="/api/orders",method="POST",status_class="2xx"}'
+        values: "0+8x70"
+      - series: 'lab_http_server_requests_total{service="gateway",route="/api/orders",method="POST",status_class="5xx"}'
+        values: "0+2x70"
+    promql_expr_test:
+      - expr: 'slo:sli_error:ratio_rate5m{sloth_id="order-journey-order-availability"}'
+        eval_time: 65m
+        exp_samples:
+          - labels: '{__name__="slo:sli_error:ratio_rate5m",owner="CCRami",repository="sre-reliability-lab",sloth_id="order-journey-order-availability",sloth_service="order-journey",sloth_slo="order-availability",sloth_window="5m"}'
+            value: 0.2

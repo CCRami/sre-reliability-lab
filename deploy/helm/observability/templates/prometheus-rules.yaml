@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: sre-lab-rules
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
+spec:
+  groups:
+{{- $slo := .Files.Get "files/rules/slo-generated.yaml" | fromYaml }}
+{{- $cause := .Files.Get "files/rules/cause-alerts.yaml" | fromYaml }}
+{{ concat $slo.groups $cause.groups | toYaml | nindent 4 }}
