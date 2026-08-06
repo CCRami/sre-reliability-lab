@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/CCRami/sre-reliability-lab/contracts/fulfillment-event.schema.json",
+  "title": "FulfillmentEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventVersion", "orderId", "enqueuedAt", "attempt"],
+  "properties": {
+    "eventVersion": { "const": "1" },
+    "orderId": { "type": "string", "format": "uuid" },
+    "enqueuedAt": { "type": "string", "format": "date-time" },
+    "traceparent": { "type": "string" },
+    "tracestate": { "type": "string" },
+    "attempt": { "type": "integer", "minimum": 0 }
+  }
+}
