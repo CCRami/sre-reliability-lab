@@ -45,8 +45,17 @@ jobs:
       - uses: azure/setup-helm@v4
       - name: Lint and render Helm chart
         run: make helm-validate
+      - name: Validate SLO generation and Prometheus rules
+        run: |
+          chmod +x scripts/*.sh
+          make slo-generate
+          git diff --exit-code -- observability/prometheus/rules deploy/helm/observability/files/rules
+          make promtool-test
+      - name: Validate Grafana dashboard JSON
+        run: find deploy/helm/observability/files/dashboards -name '*.json' -print0 | xargs -0 -n1 jq empty
       - name: Validate rendered Kubernetes resources
         run: |
           helm template sre-lab deploy/helm/sre-lab > /tmp/sre-lab.yaml
+          helm template observability deploy/helm/observability --namespace observability >> /tmp/sre-lab.yaml
           docker run --rm -v /tmp:/work ghcr.io/yannh/kubeconform:v0.7.0 \
             -strict -summary -ignore-missing-schemas /work/sre-lab.yaml

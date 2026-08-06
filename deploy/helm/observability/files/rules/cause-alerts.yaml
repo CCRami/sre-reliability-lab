@@ -1,0 +1,62 @@
+groups:
+  - name: sre-lab-cause-alerts
+    rules:
+      - alert: FulfillmentQueueBacklog
+        expr: lab_queue_depth{stream="fulfillment.jobs"} > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: cause
+          service: worker
+        annotations:
+          summary: Fulfillment queue contains more than 100 events
+          impact: Accepted orders may be fulfilled later than the 30-second objective.
+          runbook_url: https://github.com/CCRami/sre-reliability-lab/blob/main/runbooks/queue-backlog.md
+
+      - alert: DatabaseConnectionsHigh
+        expr: postgresql_backends / clamp_min(postgresql_connection_max, 1) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          category: cause
+          service: orders
+        annotations:
+          summary: PostgreSQL connection use is above 80 percent
+          impact: New order and catalog requests may block or fail as the database limit is reached.
+          runbook_url: https://github.com/CCRami/sre-reliability-lab/blob/main/runbooks/database-saturation.md
+
+      - alert: LabPodCrashLooping
+        expr: max_over_time(kube_pod_container_status_waiting_reason{namespace="sre-lab",reason="CrashLoopBackOff"}[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+          category: cause
+          service: platform
+        annotations:
+          summary: A lab application container is crash-looping
+          impact: Capacity is reduced and the affected service may become unavailable.
+          runbook_url: https://github.com/CCRami/sre-reliability-lab/blob/main/runbooks/pod-instability.md
+
+      - alert: LabContainerCPUThrottled
+        expr: sum by (pod) (rate(container_cpu_cfs_throttled_periods_total{namespace="sre-lab",container!=""}[5m])) / clamp_min(sum by (pod) (rate(container_cpu_cfs_periods_total{namespace="sre-lab",container!=""}[5m])), 0.001) > 0.25
+        for: 10m
+        labels:
+          severity: warning
+          category: cause
+          service: platform
+        annotations:
+          summary: A lab application pod is CPU-throttled above 25 percent
+          impact: Request or fulfillment latency may increase because CPU demand exceeds its limit.
+          runbook_url: https://github.com/CCRami/sre-reliability-lab/blob/main/runbooks/resource-pressure.md
+
+      - alert: CoreDNSFailureRateHigh
+        expr: sum(rate(coredns_dns_responses_total{rcode!="NOERROR"}[5m])) / clamp_min(sum(rate(coredns_dns_responses_total[5m])), 0.001) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          category: cause
+          service: platform
+        annotations:
+          summary: More than five percent of cluster DNS responses are errors
+          impact: Services may fail to resolve dependencies and return errors.
+          runbook_url: https://github.com/CCRami/sre-reliability-lab/blob/main/runbooks/dns-network.md

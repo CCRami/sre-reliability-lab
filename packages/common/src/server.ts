@@ -2,11 +2,24 @@ import Fastify from "fastify";
 import { ZodError } from "zod";
 import { DependencyError, NotFoundError } from "./errors.js";
 import { createLogger } from "./logger.js";
+import { httpDuration, httpRequests } from "./metrics.js";
 
 export type ReadinessCheck = () => Promise<void>;
 
 export function createServer(service: string, readiness: ReadinessCheck) {
   const app = Fastify({ loggerInstance: createLogger(service) });
+
+  app.addHook("onResponse", (request, reply, done) => {
+    const attributes = {
+      service,
+      route: request.routeOptions.url,
+      method: request.method,
+      status_class: `${Math.floor(reply.statusCode / 100)}xx`,
+    };
+    httpRequests.add(1, attributes);
+    httpDuration.record(reply.elapsedTime / 1_000, attributes);
+    done();
+  });
 
   app.get("/health/live", () => ({ status: "ok", service }));
   app.get("/health/ready", async (_request, reply) => {

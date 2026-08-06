@@ -28,6 +28,30 @@ export async function start(): Promise<void> {
   });
 
   app.get("/", async (_request, reply) => reply.type("text/html").send(page));
+  app.post("/internal/alerts", async (request, reply) => {
+    const notification = request.body as {
+      status?: string;
+      commonLabels?: Record<string, string>;
+      alerts?: Array<{
+        status?: string;
+        labels?: Record<string, string>;
+        annotations?: Record<string, string>;
+      }>;
+    };
+    app.log.warn(
+      {
+        alert_status: notification.status,
+        common_labels: notification.commonLabels,
+        alerts: notification.alerts?.map((alert) => ({
+          status: alert.status,
+          labels: alert.labels,
+          annotations: alert.annotations,
+        })),
+      },
+      "alertmanager notification received",
+    );
+    return reply.code(204).send();
+  });
   app.get("/api/products/:id", async (request, reply) => {
     const result = await proxy(`${catalogUrl}/products/${(request.params as { id: string }).id}`);
     return reply.code(result.status).send(result.body);

@@ -1,0 +1,16 @@
+apiVersion: v2
+name: sre-lab-observability
+description: Correlated metrics, logs, traces, SLOs, and alert routing for the SRE Reliability Lab
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+dependencies:
+  - name: kube-prometheus-stack
+    version: 88.1.5
+    repository: https://prometheus-community.github.io/helm-charts
+  - name: loki
+    version: 7.2.0
+    repository: https://grafana.github.io/helm-charts
+  - name: tempo
+    version: 1.24.4
+    repository: https://grafana.github.io/helm-charts

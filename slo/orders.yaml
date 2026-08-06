@@ -1,0 +1,65 @@
+version: "prometheus/v1"
+service: "order-journey"
+labels:
+  owner: "CCRami"
+  repository: "sre-reliability-lab"
+slos:
+  - name: "order-availability"
+    objective: 99
+    description: "Eligible order requests return a successful 2xx response. Client 4xx responses are excluded."
+    sli:
+      events:
+        error_query: ((sum(rate(lab_http_server_requests_total{service="gateway",route="/api/orders",method="POST",status_class=~"5.."}[{{.window}}])) or vector(0)) and on() (sum(increase(lab_http_server_requests_total{service="gateway",route="/api/orders",method="POST",status_class=~"2..|5.."}[{{.window}}])) >= 5))
+        total_query: sum(rate(lab_http_server_requests_total{service="gateway",route="/api/orders",method="POST",status_class=~"2..|5.."}[{{.window}}]))
+    alerting:
+      name: OrderAvailabilityBurn
+      labels:
+        category: symptom
+      annotations:
+        summary: "Order availability is consuming error budget"
+        impact: "Users may be unable to place orders."
+        runbook_url: "https://github.com/CCRami/sre-reliability-lab/blob/main/runbooks/order-availability.md"
+      page_alert:
+        labels: { severity: page }
+      ticket_alert:
+        labels: { severity: ticket }
+
+  - name: "order-latency"
+    objective: 95
+    description: "Successful order requests complete within 500 milliseconds."
+    sli:
+      events:
+        error_query: ((sum(rate(lab_http_server_request_duration_seconds_count{service="gateway",route="/api/orders",method="POST",status_class="2xx"}[{{.window}}])) - sum(rate(lab_http_server_request_duration_seconds_bucket{service="gateway",route="/api/orders",method="POST",status_class="2xx",le="0.5"}[{{.window}}]))) and on() (sum(increase(lab_http_server_request_duration_seconds_count{service="gateway",route="/api/orders",method="POST",status_class="2xx"}[{{.window}}])) >= 5))
+        total_query: sum(rate(lab_http_server_request_duration_seconds_count{service="gateway",route="/api/orders",method="POST",status_class="2xx"}[{{.window}}]))
+    alerting:
+      name: OrderLatencyBurn
+      labels:
+        category: symptom
+      annotations:
+        summary: "Order latency is consuming error budget"
+        impact: "Users are waiting more than 500 ms to place orders."
+        runbook_url: "https://github.com/CCRami/sre-reliability-lab/blob/main/runbooks/order-latency.md"
+      page_alert:
+        labels: { severity: page }
+      ticket_alert:
+        labels: { severity: ticket }
+
+  - name: "fulfillment-freshness"
+    objective: 99
+    description: "Completed fulfillment work finishes within 30 seconds; queue-age alerts cover stalled work with no completions."
+    sli:
+      events:
+        error_query: ((sum(rate(lab_order_fulfillment_total{outcome="late"}[{{.window}}])) or vector(0)) and on() (sum(increase(lab_order_fulfillment_total[{{.window}}])) >= 5))
+        total_query: sum(rate(lab_order_fulfillment_total[{{.window}}]))
+    alerting:
+      name: FulfillmentFreshnessBurn
+      labels:
+        category: symptom
+      annotations:
+        summary: "Fulfillment freshness is consuming error budget"
+        impact: "Accepted orders are not being fulfilled within 30 seconds."
+        runbook_url: "https://github.com/CCRami/sre-reliability-lab/blob/main/runbooks/fulfillment-delay.md"
+      page_alert:
+        labels: { severity: page }
+      ticket_alert:
+        labels: { severity: ticket }

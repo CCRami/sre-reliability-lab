@@ -2,7 +2,7 @@ import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentation
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-grpc";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-grpc";
 import { resourceFromAttributes } from "@opentelemetry/resources";
-import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
+import { AggregationType, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import {
   ATTR_DEPLOYMENT_ENVIRONMENT_NAME,
@@ -25,6 +25,24 @@ export function initTelemetry(serviceName: string): void {
       exporter: new OTLPMetricExporter(),
       exportIntervalMillis: 10_000,
     }),
+    views: [
+      {
+        meterName: "sre-reliability-lab",
+        instrumentName: "lab.http.server.request.duration",
+        aggregation: {
+          type: AggregationType.EXPLICIT_BUCKET_HISTOGRAM,
+          options: { boundaries: [0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10] },
+        },
+      },
+      {
+        meterName: "sre-reliability-lab",
+        instrumentName: "lab.order.fulfillment.duration",
+        aggregation: {
+          type: AggregationType.EXPLICIT_BUCKET_HISTOGRAM,
+          options: { boundaries: [1, 5, 10, 30, 60, 120, 300] },
+        },
+      },
+    ],
     instrumentations: [
       getNodeAutoInstrumentations({ "@opentelemetry/instrumentation-fs": { enabled: false } }),
     ],
