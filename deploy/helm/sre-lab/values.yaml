@@ -1,0 +1,68 @@
+namespace:
+  create: true
+  name: sre-lab
+
+image:
+  repositoryPrefix: sre-lab
+  tag: dev
+  pullPolicy: IfNotPresent
+
+serviceVersion: dev
+deploymentEnvironment: kind
+otelEndpoint: ""
+
+postgres:
+  image: sre-lab/postgres:17.6
+  database: reliability_lab
+  username: lab
+  password: lab-local-only
+  storage: 1Gi
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+
+redis:
+  image: sre-lab/redis:8.2
+  storage: 512Mi
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { cpu: 300m, memory: 256Mi }
+
+components:
+  gateway:
+    replicas: 2
+    port: 8080
+    serviceType: NodePort
+    nodePort: 30080
+    env:
+      CATALOG_URL: http://catalog:8081
+      ORDERS_URL: http://orders:8082
+    resources:
+      requests: { cpu: 50m, memory: 64Mi }
+      limits: { cpu: 300m, memory: 256Mi }
+  catalog:
+    replicas: 2
+    port: 8081
+    env: {}
+    resources:
+      requests: { cpu: 50m, memory: 64Mi }
+      limits: { cpu: 300m, memory: 256Mi }
+  orders:
+    replicas: 2
+    port: 8082
+    env:
+      CATALOG_URL: http://catalog:8081
+      REDIS_URL: redis://redis:6379
+    resources:
+      requests: { cpu: 50m, memory: 64Mi }
+      limits: { cpu: 400m, memory: 256Mi }
+  worker:
+    replicas: 1
+    port: 8083
+    env:
+      REDIS_URL: redis://redis:6379
+      WORKER_CONCURRENCY: "1"
+      WORKER_MAX_ATTEMPTS: "5"
+    resources:
+      requests: { cpu: 50m, memory: 64Mi }
+      limits: { cpu: 400m, memory: 256Mi }

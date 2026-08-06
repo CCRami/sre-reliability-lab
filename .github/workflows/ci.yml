@@ -36,3 +36,17 @@ jobs:
       - name: Stop application
         if: always()
         run: docker compose down -v
+
+  platform:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Lint and render Helm chart
+        run: make helm-validate
+      - name: Validate rendered Kubernetes resources
+        run: |
+          helm template sre-lab deploy/helm/sre-lab > /tmp/sre-lab.yaml
+          docker run --rm -v /tmp:/work ghcr.io/yannh/kubeconform:v0.7.0 \
+            -strict -summary -ignore-missing-schemas /work/sre-lab.yaml
