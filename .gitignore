@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.tools/
+.cache/
+coverage/
+reports/raw/
+backups/
+*.log
+.DS_Store
