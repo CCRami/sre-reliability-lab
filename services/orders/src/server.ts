@@ -17,13 +17,12 @@ const orderParams = z.object({ id: z.uuid() });
 export async function start(): Promise<void> {
   const pool = createDatabasePool();
   const redis = createClient({ url: requiredEnv("REDIS_URL") });
-  redis.on("error", (error) => app.log.error({ err: error }, "redis client error"));
-  await redis.connect();
-
   const catalogUrl = requiredEnv("CATALOG_URL");
   const app = createServer("orders", async () => {
     await Promise.all([pool.query("SELECT 1"), redis.ping()]);
   });
+  redis.on("error", (error) => app.log.error({ err: error }, "redis client error"));
+  await redis.connect();
 
   app.post("/orders", async (request, reply) => {
     const input = createOrderSchema.parse(request.body);
