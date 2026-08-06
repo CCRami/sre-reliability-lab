@@ -1,4 +1,5 @@
 import { context, propagation, SpanStatusCode, trace } from "@opentelemetry/api";
+import { createServer as createHttpServer } from "node:http";
 import {
   createDatabasePool,
   createLogger,
@@ -29,6 +30,27 @@ try {
 } catch (error) {
   if (!(error instanceof Error) || !error.message.includes("BUSYGROUP")) throw error;
 }
+
+const healthServer = createHttpServer((request, response) => {
+  response.setHeader("content-type", "application/json");
+  if (request.url === "/health/live") {
+    response.writeHead(200).end(JSON.stringify({ status: "ok", service: "worker" }));
+    return;
+  }
+  if (request.url === "/health/ready") {
+    void Promise.all([pool.query("SELECT 1"), redis.ping()])
+      .then(() =>
+        response.writeHead(200).end(JSON.stringify({ status: "ready", service: "worker" })),
+      )
+      .catch((error: unknown) => {
+        log.warn({ err: error }, "worker readiness check failed");
+        response.writeHead(503).end(JSON.stringify({ status: "not-ready", service: "worker" }));
+      });
+    return;
+  }
+  response.writeHead(404).end(JSON.stringify({ error: "not_found" }));
+});
+healthServer.listen(Number.parseInt(process.env.PORT ?? "8083", 10), "0.0.0.0");
 
 async function processMessage(id: string, message: Record<string, string>): Promise<void> {
   const event = fulfillmentEventSchema.parse(message);
@@ -89,6 +111,7 @@ async function consume(): Promise<void> {
 async function shutdown(signal: string) {
   running = false;
   log.info({ signal }, "worker shutting down");
+  healthServer.close();
   await redis.quit();
   await pool.end();
 }
