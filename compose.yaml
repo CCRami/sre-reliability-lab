@@ -1,0 +1,123 @@
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_DB: reliability_lab
+      POSTGRES_USER: lab
+      POSTGRES_PASSWORD: lab-local-only
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lab -d reliability_lab"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  redis:
+    image: redis:8.2-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  catalog:
+    build: { context: ., args: { SERVICE: catalog } }
+    environment:
+      PORT: "8081"
+      DATABASE_URL: postgres://lab:lab-local-only@postgres:5432/reliability_lab
+      DEPLOYMENT_ENVIRONMENT: compose
+      OTEL_SERVICE_NAME: catalog
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:8081/health/ready').then(r=>{if(!r.ok)process.exit(1)})",
+        ]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+  orders:
+    build: { context: ., args: { SERVICE: orders } }
+    environment:
+      PORT: "8082"
+      DATABASE_URL: postgres://lab:lab-local-only@postgres:5432/reliability_lab
+      REDIS_URL: redis://redis:6379
+      CATALOG_URL: http://catalog:8081
+      DEPLOYMENT_ENVIRONMENT: compose
+      OTEL_SERVICE_NAME: orders
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      catalog: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:8082/health/ready').then(r=>{if(!r.ok)process.exit(1)})",
+        ]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+  worker:
+    build: { context: ., args: { SERVICE: worker } }
+    environment:
+      PORT: "8083"
+      DATABASE_URL: postgres://lab:lab-local-only@postgres:5432/reliability_lab
+      REDIS_URL: redis://redis:6379
+      DEPLOYMENT_ENVIRONMENT: compose
+      OTEL_SERVICE_NAME: worker
+      WORKER_CONCURRENCY: "1"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:8083/health/ready').then(r=>{if(!r.ok)process.exit(1)})",
+        ]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+  gateway:
+    build: { context: ., args: { SERVICE: gateway } }
+    environment:
+      PORT: "8080"
+      CATALOG_URL: http://catalog:8081
+      ORDERS_URL: http://orders:8082
+      DEPLOYMENT_ENVIRONMENT: compose
+      OTEL_SERVICE_NAME: gateway
+    ports: ["8080:8080"]
+    depends_on:
+      catalog: { condition: service_healthy }
+      orders: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:8080/health/ready').then(r=>{if(!r.ok)process.exit(1)})",
+        ]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+volumes:
+  postgres-data:
+  redis-data:

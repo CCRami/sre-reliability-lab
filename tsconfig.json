@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/common" },
+    { "path": "services/catalog" },
+    { "path": "services/orders" },
+    { "path": "services/gateway" },
+    { "path": "services/worker" }
+  ]
+}

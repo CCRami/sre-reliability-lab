@@ -1,0 +1,38 @@
+{
+  "name": "sre-reliability-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "npm run build -w @lab/common && npm run build -w @lab/catalog && npm run build -w @lab/orders && npm run build -w @lab/gateway && npm run build -w @lab/worker",
+    "clean": "npm run clean --workspaces --if-present",
+    "dev:gateway": "npm run dev -w @lab/gateway",
+    "dev:catalog": "npm run dev -w @lab/catalog",
+    "dev:orders": "npm run dev -w @lab/orders",
+    "dev:worker": "npm run dev -w @lab/worker",
+    "lint": "npm run build -w @lab/common && eslint packages services tests/*.ts",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "test": "TMPDIR=/tmp tsx --test tests/*.test.ts",
+    "smoke": "TMPDIR=/tmp tsx tests/smoke.ts",
+    "typecheck": "tsc -b --pretty false",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "latest",
+    "@types/node": "latest",
+    "@types/pg": "latest",
+    "eslint": "latest",
+    "prettier": "latest",
+    "tsx": "latest",
+    "typescript": "latest",
+    "typescript-eslint": "latest"
+  }
+}
