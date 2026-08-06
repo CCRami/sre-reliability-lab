@@ -1,7 +1,7 @@
 SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 
-.PHONY: help install check compose-up compose-down smoke tools preflight images bootstrap teardown helm-validate observability observability-access slo-generate promtool-test load
+.PHONY: help install check compose-up compose-down smoke tools preflight images bootstrap teardown helm-validate observability observability-access slo-generate promtool-test load chaos-install chaos-run chaos-guards backup restore
 help:
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z0-9_-]+:.*## / {printf "%-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
@@ -56,3 +56,18 @@ promtool-test: ## Run alert and recording-rule unit tests
 
 load: ## Run k6 PROFILE=smoke|baseline|stress|spike|soak
 	./scripts/run-load.sh "$(or $(PROFILE),smoke)"
+
+chaos-install: ## Install Chaos Mesh after explicit CHAOS_ACK
+	./scripts/install-chaos.sh
+
+chaos-run: ## Run one bounded EXPERIMENT after explicit CHAOS_ACK
+	./scripts/chaos.sh run "$(EXPERIMENT)"
+
+chaos-guards: ## Prove chaos is rejected when any safety guard is absent
+	./tests/chaos/guards.sh
+
+backup: ## Create a checksummed logical PostgreSQL backup outside Git
+	./scripts/backup.sh
+
+restore: ## Restore BACKUP=/exact/path into an isolated database and PVC
+	./scripts/restore.sh "$(BACKUP)"

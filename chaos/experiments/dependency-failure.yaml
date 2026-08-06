@@ -1,0 +1,24 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: dependency-failure
+  namespace: sre-lab
+  labels: { sre-lab/experiment: bounded }
+  annotations:
+    sre-lab/hypothesis: "Catalog isolation maps to explicit 503 order responses without corrupting state."
+    sre-lab/abort-threshold: "experiment exceeds 45 seconds"
+    sre-lab/expected-telemetry: "503s, dependency errors, availability burn, and catalog network errors"
+spec:
+  action: loss
+  mode: all
+  duration: 45s
+  selector:
+    namespaces: [sre-lab]
+    labelSelectors: { app.kubernetes.io/name: orders, sre-lab/chaos-target: "true" }
+  loss: { loss: "100", correlation: "100" }
+  direction: to
+  target:
+    mode: all
+    selector:
+      namespaces: [sre-lab]
+      labelSelectors: { app.kubernetes.io/name: catalog }

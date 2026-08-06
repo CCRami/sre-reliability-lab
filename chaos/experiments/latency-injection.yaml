@@ -1,0 +1,24 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: latency-injection
+  namespace: sre-lab
+  labels: { sre-lab/experiment: bounded }
+  annotations:
+    sre-lab/hypothesis: "250 ms catalog latency remains within the 500 ms order objective."
+    sre-lab/abort-threshold: "three consecutive failed readiness probes"
+    sre-lab/expected-telemetry: "orders-to-catalog span latency and latency-budget consumption"
+spec:
+  action: delay
+  mode: all
+  duration: 60s
+  selector:
+    namespaces: [sre-lab]
+    labelSelectors: { app.kubernetes.io/name: orders, sre-lab/chaos-target: "true" }
+  delay: { latency: 250ms, correlation: "100", jitter: 25ms }
+  direction: to
+  target:
+    mode: all
+    selector:
+      namespaces: [sre-lab]
+      labelSelectors: { app.kubernetes.io/name: catalog }

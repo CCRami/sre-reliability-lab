@@ -53,9 +53,13 @@ jobs:
           make promtool-test
       - name: Validate Grafana dashboard JSON
         run: find deploy/helm/observability/files/dashboards -name '*.json' -print0 | xargs -0 -n1 jq empty
+      - name: Prove chaos safety guards reject unsafe contexts
+        run: make chaos-guards
       - name: Validate rendered Kubernetes resources
         run: |
           helm template sre-lab deploy/helm/sre-lab > /tmp/sre-lab.yaml
           helm template observability deploy/helm/observability --namespace observability >> /tmp/sre-lab.yaml
+          cat deploy/toxiproxy/toxiproxy.yaml deploy/recovery/restore-target.yaml >> /tmp/sre-lab.yaml
+          cat chaos/experiments/*.yaml >> /tmp/sre-lab.yaml
           docker run --rm -v /tmp:/work ghcr.io/yannh/kubeconform:v0.7.0 \
             -strict -summary -ignore-missing-schemas /work/sre-lab.yaml

@@ -1,0 +1,26 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: database-queue-saturation
+  namespace: sre-lab
+  labels: { sre-lab/experiment: bounded }
+  annotations:
+    sre-lab/hypothesis: "Slow PostgreSQL and Redis calls expose pool and queue saturation before total failure."
+    sre-lab/abort-threshold: "queue depth exceeds 500 or experiment exceeds 60 seconds"
+    sre-lab/expected-telemetry: "database pool pressure, Redis latency, retries, and queue age"
+spec:
+  action: delay
+  mode: all
+  duration: 60s
+  selector:
+    namespaces: [sre-lab]
+    expressionSelectors:
+      - { key: app.kubernetes.io/name, operator: In, values: [orders, worker] }
+  delay: { latency: 2s, correlation: "100", jitter: 250ms }
+  direction: to
+  target:
+    mode: all
+    selector:
+      namespaces: [sre-lab]
+      expressionSelectors:
+        - { key: app.kubernetes.io/name, operator: In, values: [postgres, redis] }

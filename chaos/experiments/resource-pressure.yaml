@@ -1,0 +1,19 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: resource-pressure
+  namespace: sre-lab
+  labels: { sre-lab/experiment: bounded }
+  annotations:
+    sre-lab/hypothesis: "Worker resource pressure increases queue age without affecting order acceptance."
+    sre-lab/abort-threshold: "queue depth exceeds 500 or gateway readiness fails three times"
+    sre-lab/expected-telemetry: "worker CPU/memory saturation and increasing queue age"
+spec:
+  mode: one
+  duration: 60s
+  selector:
+    namespaces: [sre-lab]
+    labelSelectors: { app.kubernetes.io/name: worker, sre-lab/chaos-target: "true" }
+  stressors:
+    cpu: { workers: 1, load: 80 }
+    memory: { workers: 1, size: 96MB }

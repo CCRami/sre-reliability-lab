@@ -1,0 +1,13 @@
+# Chaos Mesh is installed only by `make chaos-install`; bootstrap never enables it.
+dashboard:
+  create: false
+controllerManager:
+  replicaCount: 1
+  leaderElection:
+    enabled: false
+  enableFilterNamespace: true
+chaosDaemon:
+  runtime: containerd
+  socketPath: /run/containerd/containerd.sock
+dnsServer:
+  create: true
