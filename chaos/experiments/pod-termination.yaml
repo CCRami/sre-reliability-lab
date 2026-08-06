@@ -1,0 +1,17 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: pod-termination
+  namespace: sre-lab
+  labels: { sre-lab/experiment: bounded }
+  annotations:
+    sre-lab/hypothesis: "Gateway replicas preserve order availability during one pod loss."
+    sre-lab/abort-threshold: "three consecutive failed readiness probes"
+    sre-lab/expected-telemetry: "pod restart plus stable SLO availability"
+spec:
+  action: pod-kill
+  mode: one
+  duration: 30s
+  selector:
+    namespaces: [sre-lab]
+    labelSelectors: { app.kubernetes.io/name: gateway, sre-lab/chaos-target: "true" }

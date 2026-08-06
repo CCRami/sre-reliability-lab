@@ -1,0 +1,18 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: DNSChaos
+metadata:
+  name: dns-network-degradation
+  namespace: sre-lab
+  labels: { sre-lab/experiment: bounded }
+  annotations:
+    sre-lab/hypothesis: "Catalog DNS errors produce bounded 503s and actionable DNS telemetry."
+    sre-lab/abort-threshold: "experiment exceeds 45 seconds"
+    sre-lab/expected-telemetry: "dns.lookup span errors, order 503s, and CoreDNS diagnostics"
+spec:
+  action: error
+  mode: all
+  duration: 45s
+  patterns: ["catalog.sre-lab.svc", "catalog.sre-lab.svc.cluster.local"]
+  selector:
+    namespaces: [sre-lab]
+    labelSelectors: { app.kubernetes.io/name: orders, sre-lab/chaos-target: "true" }
