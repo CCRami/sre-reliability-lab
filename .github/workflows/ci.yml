@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -41,8 +41,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-helm@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: azure/setup-helm@v5
+        with:
+          # Helm 4 requires repositories to be registered before dependency builds.
+          # Keep CI aligned with the Helm 3 toolchain used and tested by this lab.
+          version: v3.19.4
       - name: Lint and render Helm chart
         run: make helm-validate
       - name: Validate SLO generation and Prometheus rules
