@@ -1,0 +1,18 @@
+namespace:
+  create: false
+
+image:
+  repositoryPrefix: replace-with-your-registry/sre-lab
+  tag: replace-with-an-immutable-tag
+  pullPolicy: IfNotPresent
+
+deploymentEnvironment: cloud
+
+# Supply secrets through your platform's secret manager. Never commit them here.
+postgres:
+  password: replace-through-secret-manager
+
+components:
+  gateway:
+    serviceType: ClusterIP
+    nodePort: null

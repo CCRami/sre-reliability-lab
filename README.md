@@ -37,6 +37,19 @@ make smoke
 
 Open <http://localhost:8080> to create an order. Stop the foundation with `make compose-down`. The detailed Kubernetes bootstrap is added in the platform milestone.
 
+## Kubernetes quick start
+
+With Docker, kubectl, Helm 3, Node.js 24, and npm installed:
+
+```bash
+npm ci
+make tools       # installs checksum-verified kind v0.32.0 under .tools/
+make bootstrap   # creates only kind-sre-reliability-lab and runs the smoke journey
+make teardown
+```
+
+The gateway is available at <http://localhost:8080>. `make teardown` refuses to run unless the active context is exactly `kind-sre-reliability-lab`.
+
 Useful checks:
 
 ```bash
