@@ -17,7 +17,7 @@
     "dev:catalog": "npm run dev -w @lab/catalog",
     "dev:orders": "npm run dev -w @lab/orders",
     "dev:worker": "npm run dev -w @lab/worker",
-    "lint": "eslint packages services tests/*.ts",
+    "lint": "npm run build -w @lab/common && eslint packages services tests/*.ts",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
     "test": "TMPDIR=/tmp tsx --test tests/*.test.ts",
