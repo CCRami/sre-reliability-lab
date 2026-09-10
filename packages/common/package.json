@@ -16,17 +16,17 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@opentelemetry/api": "latest",
-    "@opentelemetry/auto-instrumentations-node": "latest",
-    "@opentelemetry/exporter-metrics-otlp-grpc": "latest",
-    "@opentelemetry/exporter-trace-otlp-grpc": "latest",
-    "@opentelemetry/resources": "latest",
-    "@opentelemetry/sdk-metrics": "latest",
-    "@opentelemetry/sdk-node": "latest",
-    "@opentelemetry/semantic-conventions": "latest",
-    "fastify": "latest",
-    "pg": "latest",
-    "pino": "latest",
-    "zod": "latest"
+    "@opentelemetry/api": "*",
+    "@opentelemetry/auto-instrumentations-node": "^0.80.0",
+    "@opentelemetry/exporter-metrics-otlp-grpc": "*",
+    "@opentelemetry/exporter-trace-otlp-grpc": "*",
+    "@opentelemetry/resources": "*",
+    "@opentelemetry/sdk-metrics": "*",
+    "@opentelemetry/sdk-node": "*",
+    "@opentelemetry/semantic-conventions": "*",
+    "fastify": "^5.12.3",
+    "pg": "^8.23.0",
+    "pino": "*",
+    "zod": "^4.5.4"
   }
 }
