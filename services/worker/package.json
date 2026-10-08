@@ -10,6 +10,6 @@
   },
   "dependencies": {
     "@lab/common": "*",
-    "redis": "latest"
+    "redis": "^6.3.0"
   }
 }
